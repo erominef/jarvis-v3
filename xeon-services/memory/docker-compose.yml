@@ -1,0 +1,14 @@
+# jarvis-memory service
+# Runs on Xeon at /opt/jarvis/services/memory/
+# Port 8083 — restricted to PC Tailscale IP by UFW
+# Embeddings: chromadb built-in ONNX (all-MiniLM-L6-v2, downloads on first start)
+
+services:
+  jarvis-memory:
+    build: ./app
+    ports:
+      - "8083:8083"
+    volumes:
+      - ./data:/data
+      - ./cache:/root/.cache
+    restart: unless-stopped

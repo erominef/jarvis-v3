@@ -1,0 +1,11 @@
+# jarvis-code-runner service
+# Runs on Xeon at /opt/jarvis/services/code-runner/
+# Port 8084 — restricted to PC Tailscale IP by UFW
+# Security: import allowlist in main.py blocks network/filesystem access from executed code
+
+services:
+  jarvis-code-runner:
+    build: ./app
+    ports:
+      - "8084:8084"
+    restart: unless-stopped

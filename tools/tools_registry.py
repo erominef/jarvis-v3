@@ -31,6 +31,9 @@ from tools.notify import telegram_notify
 from tools.code_runner import code_execute
 from tools.email_tools import email_send, email_read
 from tools.infra import system_health, docker_restart
+from tools.user_profile import user_profile_update
+from tools.browser_session import browser_open, browser_state, browser_click, browser_type, browser_navigate, browser_close
+from tools.self_improve import log_learning, log_error
 
 _TOOLS = {
     # ── Web ──────────────────────────────────────────────────────────────────
@@ -608,6 +611,129 @@ _TOOLS = {
             "parameters": {"type": "object", "properties": {
                 "service": {"type": "string", "description": "Service name: searxng | playwright | docuseal"},
             }, "required": ["service"]},
+        }},
+    },
+    # ── Browser sessions ──────────────────────────────────────────────────────
+    "browser_open": {
+        "fn": lambda a: browser_open(a["url"]),
+        "schema": {"type": "function", "function": {
+            "name": "browser_open",
+            "description": (
+                "Open a new interactive browser session at a URL. Returns a session_id required for all "
+                "subsequent browser calls. Workflow: browser_open -> browser_state -> browser_click/type "
+                "-> browser_close. Use for multi-step workflows like login, form submission, or paginated "
+                "scraping. For simple page reads, use web_fetch or playwright_scrape instead (faster)."
+            ),
+            "parameters": {"type": "object", "properties": {"url": {"type": "string"}}, "required": ["url"]},
+        }},
+    },
+    "browser_state": {
+        "fn": lambda a: browser_state(a["session_id"]),
+        "schema": {"type": "function", "function": {
+            "name": "browser_state",
+            "description": (
+                "Get the current page state: URL, title, and a numbered list of interactive elements "
+                "(links, buttons, inputs, selects). Each element has a ref integer for use in "
+                "browser_click and browser_type. Call after every interaction — refs change when the page updates."
+            ),
+            "parameters": {"type": "object", "properties": {"session_id": {"type": "string"}}, "required": ["session_id"]},
+        }},
+    },
+    "browser_click": {
+        "fn": lambda a: browser_click(a["session_id"], int(a["ref"])),
+        "schema": {"type": "function", "function": {
+            "name": "browser_click",
+            "description": "Click an interactive element by its ref number from browser_state. Returns {success, url}. Call browser_state after to see the updated page.",
+            "parameters": {"type": "object", "properties": {
+                "session_id": {"type": "string"},
+                "ref": {"type": "integer", "description": "Element ref from browser_state"},
+            }, "required": ["session_id", "ref"]},
+        }},
+    },
+    "browser_type": {
+        "fn": lambda a: browser_type(a["session_id"], int(a["ref"]), a["text"]),
+        "schema": {"type": "function", "function": {
+            "name": "browser_type",
+            "description": "Type text into an input or textarea by its ref number from browser_state. Clears the field before typing. Returns {success}.",
+            "parameters": {"type": "object", "properties": {
+                "session_id": {"type": "string"},
+                "ref": {"type": "integer", "description": "Element ref from browser_state"},
+                "text": {"type": "string"},
+            }, "required": ["session_id", "ref", "text"]},
+        }},
+    },
+    "browser_navigate": {
+        "fn": lambda a: browser_navigate(a["session_id"], a["url"]),
+        "schema": {"type": "function", "function": {
+            "name": "browser_navigate",
+            "description": "Navigate an existing browser session to a new URL. Preserves cookies and session state. Returns {success, title, url}.",
+            "parameters": {"type": "object", "properties": {
+                "session_id": {"type": "string"},
+                "url": {"type": "string"},
+            }, "required": ["session_id", "url"]},
+        }},
+    },
+    "browser_close": {
+        "fn": lambda a: browser_close(a["session_id"]),
+        "schema": {"type": "function", "function": {
+            "name": "browser_close",
+            "description": "Close a browser session and free its resources. Always call when done — sessions auto-expire after 10 minutes but closing immediately frees server resources.",
+            "parameters": {"type": "object", "properties": {"session_id": {"type": "string"}}, "required": ["session_id"]},
+        }},
+    },
+
+    # ── Self-improvement ───────────────────────────────────────────────────────
+    "log_learning": {
+        "fn": lambda a: log_learning(a["content"]),
+        "schema": {"type": "function", "function": {
+            "name": "log_learning",
+            "description": (
+                "Record a learning, correction, or better approach discovered during this conversation. "
+                "Call this when: you were wrong and got corrected; you found a better way to do something "
+                "you've done before; you hit a surprising edge case; or you notice a pattern worth "
+                "remembering for next time. NOT for general facts — use knowledge_add for those. "
+                "This is specifically for things that would change how you'd approach a similar situation "
+                "in a future conversation."
+            ),
+            "parameters": {"type": "object", "properties": {"content": {"type": "string", "description": "What you learned and how it changes your approach"}}, "required": ["content"]},
+        }},
+    },
+    "log_error": {
+        "fn": lambda a: log_error(a["content"]),
+        "schema": {"type": "function", "function": {
+            "name": "log_error",
+            "description": (
+                "Record a tool failure or unexpected execution error worth remembering. "
+                "Call this when a tool returns an unexpected error, a shell command fails in a non-obvious way, "
+                "or a service behaves unexpectedly. Include what you tried, what failed, and what you'd do "
+                "differently. NOT for expected failures like 'no results found' — only for errors that were "
+                "surprising or took multiple attempts to resolve."
+            ),
+            "parameters": {"type": "object", "properties": {"content": {"type": "string", "description": "What failed, why, and what to do differently next time"}}, "required": ["content"]},
+        }},
+    },
+
+    # ── Owner profile ─────────────────────────────────────────────────────────
+    "user_profile_update": {
+        "fn": lambda a: user_profile_update(a["section"], a["observation"]),
+        "schema": {"type": "function", "function": {
+            "name": "user_profile_update",
+            "description": (
+                "Record a genuine observation about the owner in their profile. "
+                "Call this when: (1) you learn something that would change how you'd act on their behalf — "
+                "their risk tolerance, decision preferences, communication style, or priorities; OR "
+                "(2) you've formed a real impression about who they are — their character, how they think, "
+                "what drives them, their strengths or blind spots. "
+                "Write in first person as your actual view, not neutral notes. "
+                "NOT for project facts or current tasks — only for durable understanding of who they are. "
+                "section must be one of: How You Think, What Drives You, Strengths I've Noticed, "
+                "Patterns and Blind Spots, How We Work Best Together, How You Want Decisions Handled, "
+                "Where You Are Right Now."
+            ),
+            "parameters": {"type": "object", "properties": {
+                "section": {"type": "string", "description": "Profile section to update"},
+                "observation": {"type": "string", "description": "The observation or impression to record, written as your genuine view"},
+            }, "required": ["section", "observation"]},
         }},
     },
 }

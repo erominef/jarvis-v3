@@ -1,0 +1,19 @@
+# jarvis-email service
+# Runs on Xeon at /opt/jarvis/services/email/
+# Port 8085 — restricted to PC Tailscale IP by UFW
+# Credentials: set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, IMAP_HOST, IMAP_USER, IMAP_PASS
+
+services:
+  jarvis-email:
+    build: ./app
+    ports:
+      - "8085:8085"
+    environment:
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - IMAP_HOST=${IMAP_HOST}
+      - IMAP_USER=${IMAP_USER}
+      - IMAP_PASS=${IMAP_PASS}
+    restart: unless-stopped

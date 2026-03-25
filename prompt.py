@@ -4,9 +4,10 @@
 #
 # Structure:
 #   1. SOUL.md  — identity, mission, personality (loaded from disk, 5-min cache)
-#   2. Tool guidance — web, memory, failure handling
-#   3. Relevant Knowledge — RAG retrieval from Xeon (if user_input provided)
-#   4. Relevant Past Context — episode retrieval from Xeon (if user_input provided)
+#   2. USER.md  — owner profile built from observation (loaded from workspace/)
+#   3. Tool guidance — web, memory, failure handling
+#   4. Relevant Knowledge — RAG retrieval from Xeon (if user_input provided)
+#   5. Relevant Past Context — episode retrieval from Xeon (if user_input provided)
 
 import time
 from pathlib import Path
@@ -14,6 +15,7 @@ from memory.client import search_knowledge, search_episodes
 from tools.tools_registry import _TOOLS
 
 _SOUL_PATH = Path(__file__).parent / "SOUL.md"
+_USER_PATH = Path(__file__).parent / "workspace" / "USER.md"
 _soul_cache: tuple[float, str] | None = None
 _SOUL_TTL = 300  # 5 minutes
 
@@ -29,6 +31,14 @@ def _load_soul() -> str:
         content = ""
     _soul_cache = (now, content)
     return content
+
+
+def _load_user_profile() -> str:
+    try:
+        content = _USER_PATH.read_text().strip()
+        return content if content else ""
+    except FileNotFoundError:
+        return ""
 
 
 _TOOL_GUIDANCE = """## Tool Usage
@@ -76,7 +86,18 @@ Code Execution:
 
 Infrastructure:
 - Use system_health to check if services are up before using them.
-- Do not retry a service more than once if system_health shows it is unreachable."""
+- Do not retry a service more than once if system_health shows it is unreachable.
+
+Browser sessions:
+- Use browser_open -> browser_state -> browser_click/browser_type -> browser_close for multi-step flows.
+- Always call browser_close when done — sessions auto-expire after 10 min but closing frees resources.
+- Call browser_state after every interaction to get fresh element refs before the next action.
+- For simple page reads, prefer web_fetch or playwright_scrape — sessions are for multi-step workflows only.
+
+Self-improvement:
+- Use log_learning when you were corrected, found a better approach, or noticed a pattern worth remembering.
+- Use log_error when a tool fails unexpectedly or a command behaves in a surprising way.
+- Do not use these for routine task completion — only for genuine surprises or corrections."""
 
 
 def _build_tool_list() -> str:
@@ -86,7 +107,14 @@ def _build_tool_list() -> str:
 
 def build_system_prompt(user_input: str = "") -> str:
     soul = _load_soul()
-    parts = [soul, _TOOL_GUIDANCE, _build_tool_list()] if soul else [_TOOL_GUIDANCE, _build_tool_list()]
+    profile = _load_user_profile()
+
+    parts = []
+    if soul:
+        parts.append(soul)
+    if profile:
+        parts.append(profile)
+    parts.extend([_TOOL_GUIDANCE, _build_tool_list()])
 
     if user_input:
         knowledge = search_knowledge(user_input, n=3)

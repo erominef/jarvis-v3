@@ -1,0 +1,11 @@
+# jarvis-browser-session service
+# Runs on Xeon at /opt/jarvis/services/browser-session/
+# Port 8086 — restricted to PC Tailscale IP by UFW
+# Manages stateful Playwright browser sessions for multi-step web automation.
+
+services:
+  jarvis-browser-session:
+    build: ./app
+    ports:
+      - "8086:8086"
+    restart: unless-stopped
