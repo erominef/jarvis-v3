@@ -1,0 +1,35 @@
+# jarvis-v3 dependencies
+
+# Core
+httpx
+python-dotenv
+python-telegram-bot==21.*
+
+# Memory / embeddings (Phase 3)
+chromadb
+onnxruntime
+numpy
+
+# Research tools
+feedparser
+pytrends
+python-whois
+youtube-transcript-api
+beautifulsoup4
+
+# Document tools
+python-pptx
+python-docx
+openpyxl
+qrcode[pil]
+Pillow
+graphviz
+jinja2
+pypdf
+
+# Data / finance tools
+pandas
+stripe
+
+# Infrastructure tools
+psutil
