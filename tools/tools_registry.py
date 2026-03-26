@@ -34,6 +34,7 @@ from tools.infra import system_health, docker_restart
 from tools.user_profile import user_profile_update
 from tools.browser_session import browser_open, browser_state, browser_click, browser_type, browser_navigate, browser_close
 from tools.self_improve import log_learning, log_error
+from tools.mcp import search_knowledge_base, kb_multi_query, kb_search_with_context, kb_suggest_queries, kb_list_sources
 
 _TOOLS = {
     # ── Web ──────────────────────────────────────────────────────────────────
@@ -710,6 +711,50 @@ _TOOLS = {
                 "surprising or took multiple attempts to resolve."
             ),
             "parameters": {"type": "object", "properties": {"content": {"type": "string", "description": "What failed, why, and what to do differently next time"}}, "required": ["content"]},
+        }},
+    },
+
+    # ── Knowledge Base ────────────────────────────────────────────────────────
+    "search_knowledge_base": {
+        "fn": lambda a: search_knowledge_base(a["query"]),
+        "schema": {"type": "function", "function": {
+            "name": "search_knowledge_base",
+            "description": "Search a curated document collection (Montegallo KB). Treat results like web results — one source among many, not authoritative truth. Use when a question may be covered by stored documents.",
+            "parameters": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]},
+        }},
+    },
+    "kb_multi_query": {
+        "fn": lambda a: kb_multi_query(a["queries"]),
+        "schema": {"type": "function", "function": {
+            "name": "kb_multi_query",
+            "description": "Run multiple queries against the KB at once — broader coverage than a single search. Treat results like web results. Use when one query might miss relevant angles.",
+            "parameters": {"type": "object", "properties": {
+                "queries": {"type": "array", "items": {"type": "string"}, "description": "List of query strings"},
+            }, "required": ["queries"]},
+        }},
+    },
+    "kb_search_with_context": {
+        "fn": lambda a: kb_search_with_context(a["query"]),
+        "schema": {"type": "function", "function": {
+            "name": "kb_search_with_context",
+            "description": "KB search that returns matched chunks with surrounding context. Treat results like web results. Use when you need more passage context around each match.",
+            "parameters": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]},
+        }},
+    },
+    "kb_suggest_queries": {
+        "fn": lambda a: kb_suggest_queries(a["partial_query"]),
+        "schema": {"type": "function", "function": {
+            "name": "kb_suggest_queries",
+            "description": "Get suggested query expansions for a topic from the KB. Use to discover related angles you haven't searched yet.",
+            "parameters": {"type": "object", "properties": {"partial_query": {"type": "string"}}, "required": ["partial_query"]},
+        }},
+    },
+    "kb_list_sources": {
+        "fn": lambda a: kb_list_sources(),
+        "schema": {"type": "function", "function": {
+            "name": "kb_list_sources",
+            "description": "List all source documents indexed in the Montegallo knowledge base.",
+            "parameters": {"type": "object", "properties": {}},
         }},
     },
 

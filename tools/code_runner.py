@@ -1,17 +1,36 @@
 # tools/code_runner.py — Sandboxed Python code execution via Xeon service.
 #
-# POSTs code to the code-runner microservice on Xeon (see xeon-services/code-runner/).
-# The service runs code in a subprocess with an AST import allowlist and a 30s timeout.
-# Output is capped at 4000 chars.
-#
-# Env: CODE_RUNNER_URL (defaults to Xeon service address)
+# Calls xeon-services/code-runner (port 8084).
+# The service runs code in a subprocess with network_mode:none and an import allowlist.
+
+import os
+import httpx
+
+_TIMEOUT = 40.0  # slightly over the service's 30s timeout
 
 
 def code_execute(code: str) -> str:
-    """
-    Execute Python code in the Xeon sandbox.
-    Returns stdout, or an error string on failure.
-    Only stdlib modules on the allowlist are available inside the sandbox.
-    """
-    # Implementation omitted.
-    raise NotImplementedError
+    url = os.getenv("CODE_RUNNER_URL", "http://100.101.127.60:8084")
+    if not code.strip():
+        return "Error: code must not be empty."
+
+    try:
+        r = httpx.post(f"{url}/run", json={"code": code, "timeout": 30}, timeout=_TIMEOUT)
+        r.raise_for_status()
+        data = r.json()
+    except httpx.ConnectError:
+        return f"Service unavailable: code-runner not running at {url}"
+    except Exception as e:
+        return f"code_execute error: {e}"
+
+    if not data.get("success"):
+        error = data.get("error", "unknown error")
+        stderr = data.get("stderr", "")
+        return f"Execution failed: {error}\n{stderr}".strip()
+
+    stdout = data.get("stdout", "")
+    stderr = data.get("stderr", "")
+    result = stdout
+    if stderr:
+        result += f"\nstderr: {stderr}"
+    return result.strip() or "(no output)"

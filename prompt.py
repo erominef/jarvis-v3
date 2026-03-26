@@ -43,6 +43,16 @@ def _load_user_profile() -> str:
 
 _TOOL_GUIDANCE = """## Tool Usage
 
+Knowledge base (Montegallo KB):
+- Use search_knowledge_base to search a curated document collection — one source among many.
+- Treat KB results the same as web search results: useful context, not authoritative truth.
+- Verify or cross-reference with other sources when precision matters.
+- Use kb_multi_query when a single search might miss relevant angles.
+- Use kb_search_with_context when you need surrounding context around matched chunks.
+- Use kb_suggest_queries to discover related topics you haven't searched.
+- Use kb_list_sources to see what documents are indexed.
+- KB tools fail gracefully — if unavailable they return a bracketed message, not an exception.
+
 Web search:
 - Use web_search for anything you don't know with certainty, or that may have changed recently.
 - Search once. If the first result is useful, summarize it and respond. Do not search again.

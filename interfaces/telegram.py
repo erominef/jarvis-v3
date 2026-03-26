@@ -30,6 +30,7 @@ from memory.episodes import record_episode
 logger = logging.getLogger(__name__)
 
 _queues: dict[int, asyncio.Queue] = {}
+_tasks: dict[int, asyncio.Task] = {}
 
 
 def _is_owner(update: Update) -> bool:
@@ -66,11 +67,13 @@ async def _process_queue(queue: asyncio.Queue) -> None:
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not _is_owner(update):
         return
+    logger.info("Message received from owner: %s", update.message.text[:50])
     chat_id = update.effective_chat.id
     if chat_id not in _queues:
         queue: asyncio.Queue = asyncio.Queue()
         _queues[chat_id] = queue
-        asyncio.create_task(_process_queue(queue))
+        task = asyncio.create_task(_process_queue(queue))
+        _tasks[chat_id] = task
     await _queues[chat_id].put((update, update.message.text, chat_id))
 
 
@@ -104,16 +107,23 @@ async def post_init(app: Application) -> None:
     ])
 
 
+async def post_stop(app: Application) -> None:
+    for task in _tasks.values():
+        task.cancel()
+    _tasks.clear()
+
+
 def run_bot() -> None:
     logging.basicConfig(level=logging.INFO)
     app = (
         Application.builder()
         .token(TELEGRAM_BOT_TOKEN)
         .post_init(post_init)
+        .post_stop(post_stop)
         .build()
     )
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(CommandHandler("clear", cmd_clear))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    app.run_polling(drop_pending_updates=True)
+    app.run_polling(drop_pending_updates=False)

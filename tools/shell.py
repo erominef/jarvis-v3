@@ -1,21 +1,51 @@
 # tools/shell.py — Restricted shell command execution.
 #
 # Security order (CRITICAL — do NOT reorder):
-#   1. Strip \n and \r from input
-#   2. Metacharacter check — reject if any of: | ; & ` $ ( ) < > #
-#   3. Allowlist check — reject if first token not in allowed set
+#   1. Metacharacter check FIRST: reject |;&`$()<>\n\r# unconditionally.
+#   2. THEN whitelist check.
 #
-# Allowed commands: ls, cat (*.md, *.txt, *.json, *.log only), echo, pwd,
-#   date, df -h, free -h, uptime, whoami, hostname, uname, curl -s https://
-#
-# No python3 — use code_execute instead.
-# shell=True is required for the allowlisted commands to work correctly.
+# python3 intentionally excluded — use code_execute tool instead.
+
+import re
+import subprocess
+
+_META_RE = re.compile(r'[|;&`$()<>\n\r#]')
+
+_ALLOWED_PATTERNS = [
+    re.compile(r"^ls(\s|$)"),
+    re.compile(r"^cat\s+\S+\.(?:md|txt|json|log)$"),
+    re.compile(r"^echo\s+.{0,200}$"),
+    re.compile(r"^pwd$"),
+    re.compile(r"^date$"),
+    re.compile(r"^df\s+-h$"),
+    re.compile(r"^free\s+-h$"),
+    re.compile(r"^uptime$"),
+    re.compile(r"^whoami$"),
+    re.compile(r"^hostname$"),
+    re.compile(r"^uname\s+-[a-z]+$"),
+    re.compile(r"^curl\s+-s\s+https://\S+$"),
+]
+
+_TIMEOUT = 10
 
 
 def shell_run(command: str) -> str:
-    """
-    Run an allowlisted read-only shell command.
-    Returns stdout + stderr combined. Timeout: 10s.
-    Rejects any command containing shell metacharacters.
-    """
-    raise NotImplementedError
+    command = command.strip().replace("\r", "").replace("\n", "")
+
+    if _META_RE.search(command):
+        return "Rejected: command contains unsafe characters."
+
+    if not any(p.match(command) for p in _ALLOWED_PATTERNS):
+        return f"Rejected: '{command[:80]}' is not in the allowed command list."
+
+    try:
+        result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=_TIMEOUT)
+        output = result.stdout.strip()
+        if result.returncode != 0:
+            err = result.stderr.strip()
+            return f"Exit {result.returncode}: {err or '(no stderr)'}"
+        return output or "(no output)"
+    except subprocess.TimeoutExpired:
+        return f"Timeout: command exceeded {_TIMEOUT}s."
+    except Exception as e:
+        return f"Error: {e}"
