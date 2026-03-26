@@ -27,7 +27,7 @@ from tools.finance import stock_price, crypto_price, exchange_rate
 from tools.data import data_analyze
 from tools.goals import goal_manager
 from tools.tasks import task_manager
-from tools.notify import telegram_notify
+from tools.notify import telegram_notify, telegram_send_file
 from tools.code_runner import code_execute
 from tools.email_tools import email_send, email_read
 from tools.infra import system_health, docker_restart
@@ -35,6 +35,7 @@ from tools.user_profile import user_profile_update
 from tools.browser_session import browser_open, browser_state, browser_click, browser_type, browser_navigate, browser_close
 from tools.self_improve import log_learning, log_error
 from tools.mcp import search_knowledge_base, kb_multi_query, kb_search_with_context, kb_suggest_queries, kb_list_sources
+from tools.crm import crm_op
 
 _TOOLS = {
     # ── Web ──────────────────────────────────────────────────────────────────
@@ -448,7 +449,15 @@ _TOOLS = {
         "fn": lambda a: n8n_trigger(a["workflow_name"], a.get("data", {})),
         "schema": {"type": "function", "function": {
             "name": "n8n_trigger",
-            "description": "Trigger an n8n automation workflow by name.",
+            "description": (
+                "Trigger an n8n automation workflow by name. "
+                "USE THIS as the bridge for external services that have no dedicated tool — "
+                "e.g. send a Mailchimp campaign, post to social media, schedule a Buffer post, "
+                "send a ConvertKit sequence, or any other third-party integration. "
+                "n8n can call any external API via HTTP nodes. If the owner asks to do something "
+                "with an external service and no dedicated tool exists, check if an n8n workflow "
+                "covers it before concluding the capability is missing."
+            ),
             "parameters": {"type": "object", "properties": {
                 "workflow_name": {"type": "string", "description": "Partial workflow name match (case-insensitive)"},
                 "data": {"type": "object", "description": "Payload to send (optional)"},
@@ -541,6 +550,23 @@ _TOOLS = {
             "name": "telegram_notify",
             "description": "Send a proactive Telegram message to the owner. Use sparingly for important updates.",
             "parameters": {"type": "object", "properties": {"message": {"type": "string"}}, "required": ["message"]},
+        }},
+    },
+    "telegram_send_file": {
+        "fn": lambda a: telegram_send_file(a["path"], a.get("caption", "")),
+        "schema": {"type": "function", "function": {
+            "name": "telegram_send_file",
+            "description": (
+                "Send a workspace file to the owner as a Telegram file attachment. "
+                "Use this immediately after creating any file with draft_docx, draft_pptx, "
+                "draft_xlsx, file_write, or any other tool — the owner receives it directly "
+                "in the chat. path is relative to workspace/ (e.g. 'plan.docx'). "
+                "caption is optional text shown under the file."
+            ),
+            "parameters": {"type": "object", "properties": {
+                "path": {"type": "string", "description": "File path relative to workspace/"},
+                "caption": {"type": "string", "description": "Optional caption shown under the file"},
+            }, "required": ["path"]},
         }},
     },
 
@@ -755,6 +781,36 @@ _TOOLS = {
             "name": "kb_list_sources",
             "description": "List all source documents indexed in the Montegallo knowledge base.",
             "parameters": {"type": "object", "properties": {}},
+        }},
+    },
+
+    # ── CRM ───────────────────────────────────────────────────────────────────
+    "crm_op": {
+        "fn": lambda a: crm_op(a["action"], **{k: v for k, v in a.items() if k != "action"}),
+        "schema": {"type": "function", "function": {
+            "name": "crm_op",
+            "description": (
+                "Client/account management. Each client gets a dedicated directory in workspace/clients/ "
+                "with a profile, notes log, documents/ folder, and images/ folder. "
+                "Actions: create (new client), get (full profile + notes), update (edit fields), "
+                "add_note (append timestamped interaction note), list (all clients, optionally filtered by status), "
+                "search (query across all client names, companies, and notes). "
+                "Use this to track all client details, interactions, and account history. "
+                "Store contracts and files in workspace/clients/{slug}/documents/ using file_write."
+            ),
+            "parameters": {"type": "object", "properties": {
+                "action": {"type": "string", "enum": ["create", "get", "update", "add_note", "list", "search"]},
+                "client": {"type": "string", "description": "Client name or company (for get/update/add_note)"},
+                "name": {"type": "string", "description": "Full name (for create)"},
+                "company": {"type": "string"},
+                "email": {"type": "string"},
+                "phone": {"type": "string"},
+                "status": {"type": "string", "description": "prospect | active | inactive"},
+                "tags": {"type": "array", "items": {"type": "string"}},
+                "note": {"type": "string", "description": "Interaction note to append (for add_note)"},
+                "author": {"type": "string", "description": "Who added the note (optional, for add_note)"},
+                "query": {"type": "string", "description": "Search query (for search)"},
+            }, "required": ["action"]},
         }},
     },
 

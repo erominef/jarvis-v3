@@ -31,6 +31,23 @@ logger = logging.getLogger(__name__)
 
 _queues: dict[int, asyncio.Queue] = {}
 _tasks: dict[int, asyncio.Task] = {}
+_MAX_LEN = 4096
+
+
+def _split(text: str) -> list[str]:
+    if len(text) <= _MAX_LEN:
+        return [text]
+    chunks = []
+    while text:
+        if len(text) <= _MAX_LEN:
+            chunks.append(text)
+            break
+        split_at = text.rfind('\n', 0, _MAX_LEN)
+        if split_at == -1:
+            split_at = _MAX_LEN
+        chunks.append(text[:split_at])
+        text = text[split_at:].lstrip('\n')
+    return chunks
 
 
 def _is_owner(update: Update) -> bool:
@@ -47,7 +64,8 @@ async def _process_queue(queue: asyncio.Queue) -> None:
             # Load history, run turn, save updated history
             history = load_history(chat_id)
             reply = await loop.run_in_executor(None, process_turn, user_text, history)
-            await update.message.reply_text(reply)
+            for chunk in _split(reply):
+                await update.message.reply_text(chunk)
 
             save_history(chat_id, history + [
                 {"role": "user", "content": user_text},

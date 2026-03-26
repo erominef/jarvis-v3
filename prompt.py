@@ -43,6 +43,19 @@ def _load_user_profile() -> str:
 
 _TOOL_GUIDANCE = """## Tool Usage
 
+## Tool Selection — When No Dedicated Tool Exists
+When the owner asks to do something with a service that has no dedicated tool, follow this order:
+1. **n8n_trigger** — check if an n8n workflow covers it. n8n can call any external API (Mailchimp, Buffer, ConvertKit, social platforms, etc.). Try this first for third-party integrations.
+2. **Browser sessions** — if no n8n workflow exists, use browser_open → browser_state → interact → browser_close to operate the service's web UI directly. This works for any web-based service.
+3. **http_request** — for raw REST API calls when you have credentials and know the endpoint.
+Never tell the owner a capability is missing without first checking these fallbacks.
+
+Clients and accounts:
+- Use crm_op to create, update, search, and retrieve all client/account information.
+- Each client has a dedicated directory at workspace/clients/{slug}/ with documents/ and images/ subdirectories.
+- Store client files (contracts, proposals) with file_write to workspace/clients/{slug}/documents/.
+- Use add_note to log every significant interaction, call, or update for a client.
+
 Knowledge base (Montegallo KB):
 - Use search_knowledge_base to search a curated document collection — one source among many.
 - Treat KB results the same as web search results: useful context, not authoritative truth.
@@ -74,9 +87,30 @@ Tool failure handling:
 
 When using web_fetch, prefer raw URLs, plain HTML docs, and API responses. Avoid GitHub blob pages, Next.js/React/Nuxt sites, and anything requiring JavaScript.
 
-Files:
+Files and Workspace Organization:
 - Use file_read/file_write/file_list for all workspace file access. Never access paths outside workspace/.
+- After creating any file with draft_docx, draft_pptx, draft_xlsx, file_write, or any other tool — immediately call telegram_send_file to deliver it. Do not just tell the owner the file exists.
 - Use file_write to save results, drafts, or data you want to persist between turns.
+- Never dump files at the workspace root. Every file belongs in a subdirectory.
+
+Workspace directory structure — always place files here:
+  clients/          — managed by crm_op. Client documents go in clients/{slug}/documents/, images in clients/{slug}/images/. Never write here with file_write directly.
+  projects/         — active project work. Create a subdirectory per project: projects/{project-name}/. Group all related files inside it.
+  drafts/           — documents being created or refined (docx, pptx, xlsx, md). Move to reports/ or projects/ when finalized.
+  reports/          — completed reports, summaries, analysis outputs. Flat or one level deep.
+  research/         — saved web content, scraped pages, research notes. Name by topic: research/{topic}-notes.md.
+  images/           — generated images (comfyui), downloaded assets, charts. Descriptive filenames.
+  data/             — CSV, JSON, and other datasets. Include date in filename: data/{name}-YYYY-MM-DD.csv.
+  temp/             — scratch space for intermediate files. Treat as disposable; clean up when done.
+
+Naming rules:
+- Use lowercase and hyphens only. No spaces, underscores, or camelCase. Example: q1-revenue-report.docx
+- Include dates in reports and data files: YYYY-MM-DD prefix or suffix.
+- Be descriptive. Never use generic names like output.pdf, file1.docx, draft.txt, result.json.
+- For versioned files, suffix with -v2, -v3 rather than -final, -final2, -FINAL.
+- Client deliverables always go under clients/{slug}/documents/ — not in drafts/ or reports/.
+
+When in doubt about where a file belongs: if it's for a client → clients/. If it's a finished output → reports/. If it's work in progress → drafts/. If it's project-specific → projects/{name}/.
 
 Research:
 - Use searxng_search for general web search — it is better than web_search (more results, more control).
@@ -103,6 +137,7 @@ Browser sessions:
 - Always call browser_close when done — sessions auto-expire after 10 min but closing frees resources.
 - Call browser_state after every interaction to get fresh element refs before the next action.
 - For simple page reads, prefer web_fetch or playwright_scrape — sessions are for multi-step workflows only.
+- Use browser sessions as a fallback for any web-based service that has no dedicated tool and no n8n workflow. If you can log in and interact via a browser, you can operate the service.
 
 Self-improvement:
 - Use log_learning when you were corrected, found a better approach, or noticed a pattern worth remembering.
