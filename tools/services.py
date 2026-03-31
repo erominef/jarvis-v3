@@ -82,8 +82,8 @@ def playwright_scrape(url: str, action: str = "content") -> str:
     sidecar_url = os.getenv("PLAYWRIGHT_URL", "http://localhost:8889").rstrip("/")
     try:
         r = httpx.post(
-            f"{sidecar_url}/scrape",
-            json={"url": url, "action": action},
+            f"{sidecar_url}/fetch",
+            json={"url": url},
             timeout=60.0,
         )
         r.raise_for_status()

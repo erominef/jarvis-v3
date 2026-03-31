@@ -18,6 +18,7 @@
 #   twice, the loop stops immediately and returns a graceful error message.
 
 import json
+import time
 import httpx
 
 from config import OLLAMA_API_KEY, OLLAMA_BASE_URL, MODEL, MAX_TOKENS, MAX_TOOL_ROUNDS
@@ -47,9 +48,17 @@ def _chat(messages: list[dict]) -> dict:
         "stream": False,
         "options": {"num_predict": MAX_TOKENS},
     }
-    resp = httpx.post(_CHAT_URL, headers=_HEADERS, json=payload, timeout=120)
-    resp.raise_for_status()
-    return resp.json()
+    try:
+        resp = httpx.post(_CHAT_URL, headers=_HEADERS, json=payload, timeout=120)
+        resp.raise_for_status()
+        return resp.json()
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code in (500, 503):
+            time.sleep(2)
+            resp = httpx.post(_CHAT_URL, headers=_HEADERS, json=payload, timeout=120)
+            resp.raise_for_status()
+            return resp.json()
+        raise
 
 
 def _is_tool_failure(result_str: str) -> str | None:
@@ -112,4 +121,4 @@ def process_turn(user_input: str, history: list[dict] | None = None) -> str:
                 "content": result,
             })
 
-    return "(max tool rounds reached)"
+    return "I hit my tool use limit before finishing — something likely looped. Please try again or break the request into smaller parts."
