@@ -51,7 +51,7 @@ def web_search(query: str) -> dict:
     except Exception:
         return {"success": False, "error": "search_error"}
 
-    hits = data.get("results", [])[:5]
+    hits = data.get("results", [])[:10]
     if not hits:
         return {"success": False, "error": "no_results"}
 

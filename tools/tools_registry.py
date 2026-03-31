@@ -87,7 +87,7 @@ _TOOLS = {
 
     # ── Research ──────────────────────────────────────────────────────────────
     "searxng_search": {
-        "fn": lambda a: searxng_search(a["query"], a.get("categories", "general"), int(a.get("limit", 10))),
+        "fn": lambda a: searxng_search(a["query"], a.get("categories", "general"), int(a.get("limit", 10)), int(a.get("page", 1))),
         "schema": {"type": "function", "function": {
             "name": "searxng_search",
             "description": "Search the web using private SearXNG. Better than web_search — use this for general searches.",
@@ -95,6 +95,7 @@ _TOOLS = {
                 "query": {"type": "string"},
                 "categories": {"type": "string", "description": "general | news | science | it (default: general)"},
                 "limit": {"type": "integer", "description": "Results to return (default 10)"},
+                "page": {"type": "integer", "description": "Page number for pagination (default 1). Use page 2+ to get additional results beyond the first 10."},
             }, "required": ["query"]},
         }},
     },

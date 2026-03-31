@@ -47,12 +47,12 @@ def _is_private_url(url: str) -> bool:
 
 # ── SearXNG ───────────────────────────────────────────────────────────────────
 
-def searxng_search(query: str, categories: str = "general", limit: int = 10) -> str:
+def searxng_search(query: str, categories: str = "general", limit: int = 10, page: int = 1) -> str:
     base_url = os.getenv("SEARXNG_URL", "http://localhost:8888").rstrip("/")
     try:
         r = httpx.get(
             f"{base_url}/search",
-            params={"q": query, "categories": categories, "format": "json", "pageno": 1},
+            params={"q": query, "categories": categories, "format": "json", "pageno": page},
             timeout=_TIMEOUT,
         )
         r.raise_for_status()
