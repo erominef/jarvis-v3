@@ -22,10 +22,13 @@ from telegram.ext import (
     ContextTypes,
 )
 
+import datetime
+
 from config import TELEGRAM_BOT_TOKEN, TELEGRAM_OWNER_ID, MODEL
 from brain import process_turn
 from store.history import load_history, save_history, clear_history
 from memory.episodes import record_episode
+from autonomy import morning_brief, midday_tick
 
 logger = logging.getLogger(__name__)
 
@@ -123,6 +126,10 @@ async def post_init(app: Application) -> None:
         BotCommand("status", "Check bot status"),
         BotCommand("clear", "Clear conversation history"),
     ])
+    # Scheduled autonomy jobs — times in UTC (ET = UTC-4)
+    app.job_queue.run_daily(morning_brief, time=datetime.time(12, 0))  # 8am ET
+    app.job_queue.run_daily(midday_tick,   time=datetime.time(17, 0))  # 1pm ET
+    logger.info("Autonomy jobs scheduled: morning_brief 12:00 UTC, midday_tick 17:00 UTC")
 
 
 async def post_stop(app: Application) -> None:

@@ -142,7 +142,16 @@ Browser sessions:
 Self-improvement:
 - Use log_learning when you were corrected, found a better approach, or noticed a pattern worth remembering.
 - Use log_error when a tool fails unexpectedly or a command behaves in a surprising way.
-- Do not use these for routine task completion — only for genuine surprises or corrections."""
+- Do not use these for routine task completion — only for genuine surprises or corrections.
+
+Autonomy (background runs):
+- When running a scheduled task, work independently. Don't ask permission to research or draft.
+- Always check goal_manager first. Update goal progress after each run.
+- Complete work fully before reporting. No half-done briefs.
+- Use telegram_notify for anything genuinely actionable or time-sensitive. Not for routine completion.
+- Morning brief: check goals → do research → send one consolidated update. One message, not many.
+- If you have nothing worth reporting, send nothing. Silence is correct when nothing happened.
+- If a task needs more research than one run allows, save progress to workspace and continue next tick."""
 
 
 def _build_tool_list() -> str:

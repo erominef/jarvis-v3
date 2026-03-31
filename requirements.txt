@@ -3,7 +3,7 @@
 # Core
 httpx
 python-dotenv
-python-telegram-bot==21.*
+python-telegram-bot[job-queue]==21.*
 
 # Memory / embeddings (Phase 3)
 chromadb

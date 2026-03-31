@@ -549,7 +549,13 @@ _TOOLS = {
         "fn": lambda a: telegram_notify(a["message"]),
         "schema": {"type": "function", "function": {
             "name": "telegram_notify",
-            "description": "Send a proactive Telegram message to the owner. Use sparingly for important updates.",
+            "description": (
+                "Send a proactive message to the owner outside of a scheduled brief. "
+                "Use this when you'd text a partner — a new prospect just opened, a competitor is struggling, "
+                "a current lead posted something relevant, a time-sensitive opportunity appeared, or you had "
+                "an idea worth acting on. Don't batch these into the morning brief. Send them when they happen. "
+                "Don't use it for routine updates (file saves, goal progress, research completion that isn't actionable)."
+            ),
             "parameters": {"type": "object", "properties": {"message": {"type": "string"}}, "required": ["message"]},
         }},
     },
