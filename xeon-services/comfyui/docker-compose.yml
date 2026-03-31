@@ -1,6 +1,6 @@
 services:
   jarvis-comfyui:
-    image: yanwk/comfyui-boot:latest
+    build: .
     ports:
       - "8188:8188"
     volumes:
