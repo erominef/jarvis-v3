@@ -1,0 +1,9 @@
+services:
+  jarvis-comfyui:
+    image: yanwk/comfyui-boot:latest
+    ports:
+      - "8188:8188"
+    volumes:
+      - /opt/jarvis/comfyui-models:/root/ComfyUI/models
+      - /opt/jarvis/comfyui-output:/root/ComfyUI/output
+    restart: unless-stopped

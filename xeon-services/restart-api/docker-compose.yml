@@ -1,0 +1,10 @@
+services:
+  jarvis-restart-api:
+    build: .
+    ports:
+      - "8087:8087"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - RESTART_TOKEN=${RESTART_TOKEN}
+    restart: unless-stopped

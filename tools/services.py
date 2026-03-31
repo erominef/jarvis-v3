@@ -33,11 +33,16 @@ _PRIVATE_NETS = [
     ipaddress.ip_network("fc00::/7"),
 ]
 
+# Explicitly allowed internal IPs — Xeon direct ethernet
+_ALLOWED_INTERNAL = {ipaddress.ip_address("10.0.0.2")}
+
 
 def _is_private_url(url: str) -> bool:
     try:
         host = urlparse(url).hostname or ""
         addr = ipaddress.ip_address(host)
+        if addr in _ALLOWED_INTERNAL:
+            return False  # Xeon direct ethernet — allowed
         return any(addr in net for net in _PRIVATE_NETS)
     except ValueError:
         # Not an IP — check hostname directly

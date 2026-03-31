@@ -18,6 +18,10 @@ OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "https://ollama.com/api")
 MODEL: str = os.getenv("MODEL", "minimax-m2.7:cloud")
 MAX_TOKENS: int = int(os.getenv("MAX_TOKENS", "4096"))
 
+# Xeon restart API
+RESTART_API_URL: str   = os.getenv("RESTART_API_URL",   "http://10.0.0.2:8087")
+RESTART_API_TOKEN: str = os.getenv("RESTART_API_TOKEN", "")
+
 # PC services
 SEARXNG_URL: str = os.environ["SEARXNG_URL"]
 PLAYWRIGHT_URL: str = os.getenv("PLAYWRIGHT_URL", "http://YOUR_XEON_IP:8082")
