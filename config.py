@@ -17,7 +17,6 @@ OLLAMA_API_KEY: str = os.environ["OLLAMA_API_KEY"]
 OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "https://ollama.com/api")
 MODEL: str = os.getenv("MODEL", "minimax-m2.7:cloud")
 MAX_TOKENS: int = int(os.getenv("MAX_TOKENS", "4096"))
-MAX_TOOL_ROUNDS: int = int(os.getenv("MAX_TOOL_ROUNDS", "100"))
 
 # PC services
 SEARXNG_URL: str = os.environ["SEARXNG_URL"]

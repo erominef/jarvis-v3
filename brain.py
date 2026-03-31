@@ -11,7 +11,7 @@
 #   4. If response contains tool_calls: execute each, append results, repeat.
 #   5. If no tool_calls: return message content.
 #
-# Loop capped at MAX_TOOL_ROUNDS to prevent runaway chains.
+# Tool loop runs until the LLM returns a message with no tool_calls.
 #
 # Retry guard:
 #   Tracks per-tool failure counts. If the same tool returns success=false
@@ -21,7 +21,7 @@ import json
 import time
 import httpx
 
-from config import OLLAMA_API_KEY, OLLAMA_BASE_URL, MODEL, MAX_TOKENS, MAX_TOOL_ROUNDS
+from config import OLLAMA_API_KEY, OLLAMA_BASE_URL, MODEL, MAX_TOKENS
 from prompt import build_system_prompt
 from tools.tools_registry import get_tool_schemas, dispatch_tool
 
@@ -80,7 +80,7 @@ def process_turn(user_input: str, history: list[dict] | None = None) -> str:
 
     fail_counts: dict[str, int] = {}
 
-    for _ in range(MAX_TOOL_ROUNDS):
+    while True:
         try:
             data = _chat(messages)
         except Exception as e:
@@ -121,4 +121,4 @@ def process_turn(user_input: str, history: list[dict] | None = None) -> str:
                 "content": result,
             })
 
-    return "I hit my tool use limit before finishing — something likely looped. Please try again or break the request into smaller parts."
+    return "(no response)"
